@@ -6,10 +6,17 @@
 #include <termios.h>
 #include <stdio.h>
 
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
 #define TRUE 1
+
+#define BUF_SIZE 255
 
 volatile int STOP=FALSE;
 
@@ -17,11 +24,11 @@ int main(int argc, char** argv)
 {
     int fd,c, res;
     struct termios oldtio,newtio;
-    char buf[255];
+    char buf[BUF_SIZE];
 
     if ( (argc < 2) || 
-  	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
-  	      (strcmp("/dev/ttyS1", argv[1])!=0) )) {
+  	     ((strcmp("/dev/ttyS10", argv[1])!=0) && 
+  	      (strcmp("/dev/ttyS11", argv[1])!=0) )) {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
     }
@@ -70,19 +77,25 @@ int main(int argc, char** argv)
 
     printf("New termios structure set\n");
 
+    char receive[BUF_SIZE];
+    strcpy(receive, "");
 
     while (STOP==FALSE) {       /* loop for input */
-      res = read(fd,buf,255);   /* returns after 5 chars have been input */
+      res = read(fd,buf,1);   /* returns after 5 chars have been input */
       buf[res]=0;               /* so we can printf... */
       printf(":%s:%d\n", buf, res);
-      if (buf[0]=='z') STOP=TRUE;
+      if (buf[0]=='\n') STOP=TRUE;
+      receive[strlen(receive)] = buf[0];
     }
 
+    printf("Press any key...\n");
+    getc(stdin);
 
 
-  /* 
-    O ciclo WHILE deve ser alterado de modo a respeitar o indicado no guião 
-  */
+    printf("String received: %s\n", receive);
+
+    // write string back to sender
+    write(fd, receive, strlen(receive));
 
 
 
